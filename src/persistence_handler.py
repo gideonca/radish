@@ -24,7 +24,7 @@ class PersistenceHandler:
     
     def __init__(self, 
                  backup_dir: Optional[str] = None,
-                 auto_backup_interval: float = 300,  # 5 minutes
+                 auto_backup_interval: float = 3600,  # 1 hour
                  store: Optional[ExpiringStore] = None):
         """
         Initialize the persistence handler.
