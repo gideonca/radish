@@ -15,7 +15,7 @@ class ExpiringStore:
         cleanup_interval (float): How often the cleanup thread runs in seconds
     """
     
-    def __init__(self, default_ttl: Optional[float] = None, cleanup_interval: float = 1.0):
+    def __init__(self, default_ttl: Optional[float] = None, cleanup_interval: float = 1.0, logging_handler=None):
         """
         Initialize an expiring store.
         
@@ -24,10 +24,12 @@ class ExpiringStore:
                         If None, entries don't expire by default.
             cleanup_interval: How often to check for and remove expired entries
                             in seconds. Default is 1 second.
+            logging_handler: Optional LoggingHandler for logging expiration events
         """
         self._store: Dict[Any, Tuple[Any, Optional[float]]] = {}
         self.default_ttl = default_ttl
         self.cleanup_interval = cleanup_interval
+        self.logging_handler = logging_handler
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
         
@@ -172,6 +174,9 @@ class ExpiringStore:
                       if expiry and expiry <= now]
             for k in expired:
                 del self._store[k]
+                # Log expiration event
+                if self.logging_handler:
+                    self.logging_handler.log_cache_expiration("default_store", str(k))
                 
     def _auto_cleanup(self) -> None:
         """

@@ -30,8 +30,9 @@ class LoggingHandler:
         # Create log directory if it doesn't exist
         self._create_log_directory()
         
-        # Set up logger
+        # Set up loggers
         self.logger = self._setup_logger()
+        self.server_logger = self._setup_server_logger()
         
         # In-memory log buffer for get_logs()
         self.logs = []
@@ -81,10 +82,41 @@ class LoggingHandler:
         
         return logger
     
+    def _setup_server_logger(self):
+        """Set up the server output logger with daily rotation."""
+        server_logger = logging.getLogger('radish_server')
+        server_logger.setLevel(logging.INFO)
+        
+        # Clear existing handlers
+        server_logger.handlers.clear()
+        
+        # Create daily server log file
+        server_log_file = self._get_server_log_file_path()
+        
+        # File handler for server output
+        file_handler = logging.FileHandler(server_log_file, mode='a', encoding='utf-8')
+        file_handler.setLevel(logging.INFO)
+        
+        # Format: [2025-11-14 15:30:45] Message
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        file_handler.setFormatter(formatter)
+        
+        server_logger.addHandler(file_handler)
+        
+        return server_logger
+    
     def _get_log_file_path(self):
         """Get the log file path for today."""
         today = datetime.now().strftime('%Y-%m-%d')
         return self.log_dir / f"radish_{today}.log"
+    
+    def _get_server_log_file_path(self):
+        """Get the server log file path for today."""
+        today = datetime.now().strftime('%Y-%m-%d')
+        return self.log_dir / f"server_{today}.log"
     
     def _add_to_memory(self, message: str):
         """Add log to in-memory buffer with size limit."""
@@ -181,6 +213,31 @@ class LoggingHandler:
         with self.lock:
             self.logger.info(message)
             self._add_to_memory(f"[{timestamp.strftime('%Y-%m-%d %H:%M:%S')}] {message}")
+    
+    def log_cache_expiration(self, cache_name: str, key: str):
+        """
+        Log cache key expiration events.
+        
+        Args:
+            cache_name: Name of the cache
+            key: The key that expired
+        """
+        timestamp = datetime.now()
+        message = f"EXPIRATION in {cache_name}: {key}"
+        
+        with self.lock:
+            self.logger.info(message)
+            self._add_to_memory(f"[{timestamp.strftime('%Y-%m-%d %H:%M:%S')}] {message}")
+    
+    def log_server_output(self, message: str):
+        """
+        Log server output messages to the daily server.log file.
+        
+        Args:
+            message: The server output message to log
+        """
+        with self.lock:
+            self.server_logger.info(message)
     
     def log(self, message: str):
         """

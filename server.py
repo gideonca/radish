@@ -16,8 +16,8 @@ from src.logging_handler import LoggingHandler
 from src.persistence_handler import PersistenceHandler
 
 # Initialize store, logging, persistence, and command handler
-store = ExpiringStore()
 logging_handler = LoggingHandler()
+store = ExpiringStore(logging_handler=logging_handler)
 persistence_handler = PersistenceHandler(
     auto_backup_interval=300,  # Backup every 5 minutes
     store=store
@@ -134,10 +134,27 @@ def start_server(host='127.0.0.1', port=6379):
     print("\n" + radish_colorized + "\n")
     print("\n" + "\n".join(radish) + "\n")
     
-    print(f'Server listening on {host}:{port}')
-    print(f'Logs are being written to: {logging_handler.get_log_file_path()}')
-    print(f'Backups are being written to: {persistence_handler.get_backup_dir()}')
-    print(f'Auto-backup interval: 5 minutes')
+    startup_msg = f'Server listening on {host}:{port}'
+    logs_msg = f'Logs are being written to: {logging_handler.get_log_file_path()}'
+    server_log_msg = f'Server output logged to: {logging_handler._get_server_log_file_path()}'
+    backups_msg = f'Backups are being written to: {persistence_handler.get_backup_dir()}'
+    interval_msg = f'Auto-backup interval: 5 minutes'
+    
+    print(startup_msg)
+    print(logs_msg)
+    print(server_log_msg)
+    print(backups_msg)
+    print(interval_msg)
+    
+    # Log to server.log
+    logging_handler.log_server_output("=" * 60)
+    logging_handler.log_server_output("Radish Server Started")
+    logging_handler.log_server_output("=" * 60)
+    logging_handler.log_server_output(startup_msg)
+    logging_handler.log_server_output(logs_msg)
+    logging_handler.log_server_output(server_log_msg)
+    logging_handler.log_server_output(backups_msg)
+    logging_handler.log_server_output(interval_msg)
     
     # Log server start
     logging_handler.log_server_event(f"Server started on {host}:{port}")
@@ -145,28 +162,42 @@ def start_server(host='127.0.0.1', port=6379):
     try:
         while True:
             client_socket, addr = server.accept()
-            print(f'Accepted connection from {addr}')
+            connection_msg = f'Accepted connection from {addr}'
+            print(connection_msg)
+            logging_handler.log_server_output(connection_msg)
+            
             client_handler = threading.Thread(
                 target=handle_client_connection,
                 args=(client_socket, addr)
             )
             client_handler.start()
     except KeyboardInterrupt:
-        print('\nShutting down server...')
+        shutdown_msg = 'Shutting down server...'
+        print(f'\n{shutdown_msg}')
+        logging_handler.log_server_output(shutdown_msg)
         logging_handler.log_server_event("Server shutting down (KeyboardInterrupt)")
         
         # Perform final backup before shutdown
-        print('Performing final backup...')
+        backup_msg = 'Performing final backup...'
+        print(backup_msg)
+        logging_handler.log_server_output(backup_msg)
         persistence_handler.backup_all()
     finally:
-        print('Cleaning up resources...')
+        cleanup_msg = 'Cleaning up resources...'
+        print(cleanup_msg)
+        logging_handler.log_server_output(cleanup_msg)
+        
         # Stop handlers
         persistence_handler.stop()
         store.stop()
+        
         # Close the server socket
         server.close()
+        
+        complete_msg = 'Server shutdown complete.'
         logging_handler.log_server_event("Server shutdown complete")
-        print('Server shutdown complete.')
+        logging_handler.log_server_output(complete_msg)
+        print(complete_msg)
         
 if __name__ == '__main__':
     start_server()
