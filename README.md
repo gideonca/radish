@@ -6,8 +6,10 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 
 - **In-memory key-value store** - Fast data access with automatic expiration (TTL)
 - **Named caches** - Organize data into isolated namespaces
+- **Automatic backups** - Timestamped JSON backups every 5 minutes to `~/.radish/cache_backup`
 - **Thread-safe operations** - Concurrent client support with fine-grained locking
 - **Event system** - Monitor and react to cache operations
+- **Command logging** - All commands and responses logged to `~/.radish/logs`
 - **Redis-like commands** - Familiar interface for Redis users
 - **HTTP API** - REST access without external dependencies
 - **List operations** - LPUSH, RPUSH, LPOP support
@@ -17,6 +19,7 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 
 - **[User Guide](docs/USER_GUIDE.md)** - Complete guide to using Radish with examples and best practices
 - **[Named Cache Guide](docs/NAMED_CACHE_GUIDE.md)** - Comprehensive guide to using named caches for organizing data
+- **[Persistence Guide](docs/PERSISTENCE_GUIDE.md)** - Automatic backups, restore, and recovery procedures
 - **[HTTP Server Guide](docs/HTTP_SERVER_GUIDE.md)** - Complete HTTP API documentation with examples
 - **[Project Roadmap](docs/TODO.md)** - Planned features and development tasks
 

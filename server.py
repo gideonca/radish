@@ -12,9 +12,16 @@ import socket
 import threading
 from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
+from src.persistence_handler import PersistenceHandler
 
-# Initialize store and command handler
+# Initialize store, logging, persistence, and command handler
 store = ExpiringStore()
+# logging_handler = LoggingHandler()
+persistence_handler = PersistenceHandler(
+    auto_backup_interval=300,  # Backup every 5 minutes
+    store=store
+)
+# command_handler = CommandHandler(store, logging_handler)
 command_handler = CommandHandler(store)
 
 def handle_client_connection(client_socket):
@@ -121,6 +128,12 @@ def start_server(host='127.0.0.1', port=6379):
     print("\n" + "\n".join(radish) + "\n")
     
     print(f'Server listening on {host}:{port}')
+    # print(f'Logs are being written to: {logging_handler.get_log_file_path()}')
+    print(f'Backups are being written to: {persistence_handler.get_backup_dir()}')
+    print(f'Auto-backup interval: 5 minutes')
+    
+    # Log server start
+    # logging_handler.log_server_event(f"Server started on {host}:{port}")
     
     try:
         while True:
@@ -133,9 +146,15 @@ def start_server(host='127.0.0.1', port=6379):
             client_handler.start()
     except KeyboardInterrupt:
         print('\nShutting down server...')
+        # logging_handler.log_server_event("Server shutting down (KeyboardInterrupt)")
+        
+        # Perform final backup before shutdown
+        print('Performing final backup...')
+        persistence_handler.backup_all()
     finally:
         print('Cleaning up resources...')
-        # Stop the expiring store's cleanup thread
+        # Stop handlers
+        persistence_handler.stop()
         store.stop()
         # Close the server socket
         server.close()
