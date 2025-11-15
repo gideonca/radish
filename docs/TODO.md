@@ -11,8 +11,8 @@
   - [x] Expiry (Add PX argument to SET command)
   - [ ] Replication of cache
   - [ ] Implementation of LRU
-  - [ ] Logging of transaction history
-  - [ ] Continual persistence to avoid crashes and restore state
+  - [x] Logging of transaction history
+  - [x] Continual persistence to avoid crashes and restore state
   - [ ] Key up and down rotates through command history so you an replay commands
   - [ ] Setup endpoint to stream logs from server via the http server
   - [x] Setup named cache system
