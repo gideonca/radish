@@ -13,10 +13,12 @@ import threading
 from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
 from src.persistence_handler import PersistenceHandler
+from src.event_handler import EventHandler
 
-# Initialize store, logging, persistence, and command handler
-store = ExpiringStore()
+# Initialize event handler, logging, store, persistence, and command handler
+event_handler = EventHandler()
 # logging_handler = LoggingHandler()
+store = ExpiringStore(event_handler=event_handler)
 persistence_handler = PersistenceHandler(
     auto_backup_interval=300,  # Backup every 5 minutes
     store=store

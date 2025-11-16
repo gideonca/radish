@@ -8,8 +8,10 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 - **Named caches** - Organize data into isolated namespaces
 - **Automatic backups** - Timestamped JSON backups every 5 minutes to `~/.radish/cache_backup`
 - **Thread-safe operations** - Concurrent client support with fine-grained locking
-- **Event system** - Monitor and react to cache operations
-- **Command logging** - All commands and responses logged to `~/.radish/logs`
+- **Event system** - Monitor and react to cache operations (SET, DELETE, CREATE_CACHE, DELETE_CACHE, CLEAR)
+- **Comprehensive logging** - Commands, responses, expirations, and server output with daily rotation
+  - `radish_YYYY-MM-DD.log` - All commands, responses, errors, and expirations
+  - `server_YYYY-MM-DD.log` - Server startup, shutdown, and connection events
 - **Redis-like commands** - Familiar interface for Redis users
 - **HTTP API** - REST access without external dependencies
 - **List operations** - LPUSH, RPUSH, LPOP support

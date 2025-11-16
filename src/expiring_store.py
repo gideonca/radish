@@ -57,7 +57,21 @@ class ExpiringStore:
         if ttl is not None:
             expiry = time.time() + ttl
         with self._lock:
+            old_value = self._store.get(key)
             self._store[key] = (value, expiry)
+            
+            # Trigger SET event if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                context = CacheEventContext(
+                    cache_name="default_store",
+                    key=str(key),
+                    value=value,
+                    old_value=old_value[0] if old_value else None,
+                    event_type=CacheEvent.SET,
+                    timestamp=time.time()
+                )
+                self.event_handler.trigger_event(CacheEvent.SET, context)
             
     def get(self, key: Any, default: Any = None) -> Any:
         """
@@ -152,7 +166,20 @@ class ExpiringStore:
         """
         with self._lock:
             if key in self._store:
+                old_value = self._store[key][0]
                 del self._store[key]
+                
+                # Trigger DELETE event if event_handler is available
+                if self.event_handler:
+                    from .event_handler import CacheEvent, CacheEventContext
+                    context = CacheEventContext(
+                        cache_name="default_store",
+                        key=str(key),
+                        old_value=old_value,
+                        event_type=CacheEvent.DELETE,
+                        timestamp=time.time()
+                    )
+                    self.event_handler.trigger_event(CacheEvent.DELETE, context)
             else:
                 raise KeyError(key)
     
@@ -213,7 +240,31 @@ class ExpiringStore:
             This method is thread-safe and can be called concurrently.
         """
         with self._lock:
+            # Trigger DELETE events for each item if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                for key, (value, _) in self._store.items():
+                    context = CacheEventContext(
+                        cache_name="default_store",
+                        key=str(key),
+                        old_value=value,
+                        event_type=CacheEvent.DELETE,
+                        timestamp=time.time()
+                    )
+                    self.event_handler.trigger_event(CacheEvent.DELETE, context)
+            
             self._store.clear()
+            
+            # Trigger CLEAR event if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                context = CacheEventContext(
+                    cache_name="default_store",
+                    key=None,
+                    event_type=CacheEvent.CLEAR,
+                    timestamp=time.time()
+                )
+                self.event_handler.trigger_event(CacheEvent.CLEAR, context)
     
     def create_cache(self, cache_name: str) -> bool:
         """
@@ -232,6 +283,18 @@ class ExpiringStore:
             if cache_name in self._store and self._store[cache_name][0] is not None:
                 return False
             self._store[cache_name] = ({}, None)
+            
+            # Trigger CREATE_CACHE event if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                context = CacheEventContext(
+                    cache_name=cache_name,
+                    key=None,
+                    event_type=CacheEvent.CREATE_CACHE,
+                    timestamp=time.time()
+                )
+                self.event_handler.trigger_event(CacheEvent.CREATE_CACHE, context)
+            
             return True
     
     def delete_cache(self, cache_name: str) -> bool:
@@ -250,6 +313,18 @@ class ExpiringStore:
         with self._lock:
             if cache_name not in self._store:
                 return False
+            
+            # Trigger DELETE_CACHE event if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                context = CacheEventContext(
+                    cache_name=cache_name,
+                    key=None,
+                    event_type=CacheEvent.DELETE_CACHE,
+                    timestamp=time.time()
+                )
+                self.event_handler.trigger_event(CacheEvent.DELETE_CACHE, context)
+            
             del self._store[cache_name]
             return True
     
@@ -305,8 +380,24 @@ class ExpiringStore:
             cache, expiry = self._store[cache_name]
             if not isinstance(cache, dict):
                 return False
+            
+            old_value = cache.get(key)
             cache[key] = value
             self._store[cache_name] = (cache, expiry)
+            
+            # Trigger SET event if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                context = CacheEventContext(
+                    cache_name=cache_name,
+                    key=key,
+                    value=value,
+                    old_value=old_value,
+                    event_type=CacheEvent.SET,
+                    timestamp=time.time()
+                )
+                self.event_handler.trigger_event(CacheEvent.SET, context)
+            
             return True
     
     def cache_get(self, cache_name: str, key: str, default: Any = None) -> Any:
@@ -349,8 +440,23 @@ class ExpiringStore:
             cache, expiry = self._store[cache_name]
             if not isinstance(cache, dict) or key not in cache:
                 return False
+            
+            old_value = cache[key]
             del cache[key]
             self._store[cache_name] = (cache, expiry)
+            
+            # Trigger DELETE event if event_handler is available
+            if self.event_handler:
+                from .event_handler import CacheEvent, CacheEventContext
+                context = CacheEventContext(
+                    cache_name=cache_name,
+                    key=key,
+                    old_value=old_value,
+                    event_type=CacheEvent.DELETE,
+                    timestamp=time.time()
+                )
+                self.event_handler.trigger_event(CacheEvent.DELETE, context)
+            
             return True
     
     def cache_keys(self, cache_name: str) -> List[str]:

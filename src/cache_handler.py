@@ -3,6 +3,7 @@ Cache handler module for managing multiple named caches.
 Each cache is a dictionary with its own key-value pairs and expiration settings.
 Supports searching, statistics, persistence, and event hooks.
 """
+import os
 import time
 import re
 import fnmatch
@@ -77,6 +78,15 @@ class CacheHandler:
                 return False
             self._store.set(cache_name, {})
             self._stats_handler.register_cache(cache_name)
+            
+            # Trigger CREATE_CACHE event
+            self._trigger_event(CacheEvent.CREATE_CACHE, CacheEventContext(
+                cache_name=cache_name,
+                key=None,
+                event_type=CacheEvent.CREATE_CACHE,
+                timestamp=time.time()
+            ))
+            
             return True
         
     def delete_cache(self, cache_name: str) -> bool:
@@ -91,6 +101,15 @@ class CacheHandler:
         """
         if cache_name not in self._store:
             return False
+        
+        # Trigger DELETE_CACHE event
+        self._trigger_event(CacheEvent.DELETE_CACHE, CacheEventContext(
+            cache_name=cache_name,
+            key=None,
+            event_type=CacheEvent.DELETE_CACHE,
+            timestamp=time.time()
+        ))
+        
         del self._store[cache_name]
         return True
         
@@ -117,8 +136,20 @@ class CacheHandler:
                 self._store.set(cache_name, cache, ttl)
                 self._stats_handler.register_cache(cache_name)
             
+            old_value = cache.get(key)
             cache[key] = value
             self._stats_handler.update_cache_items(cache_name, len(cache))
+            
+            # Trigger SET event
+            self._trigger_event(CacheEvent.SET, CacheEventContext(
+                cache_name=cache_name,
+                key=key,
+                value=value,
+                old_value=old_value,
+                event_type=CacheEvent.SET,
+                timestamp=time.time()
+            ))
+            
             return True
         
     def get(self, cache_name: str, key: str, default: Any = None) -> Any:
@@ -162,8 +193,20 @@ class CacheHandler:
             return False
         if key not in cache:
             return False
+        
+        old_value = cache[key]
         del cache[key]
         self._stats_handler.update_cache_items(cache_name, len(cache))
+        
+        # Trigger DELETE event
+        self._trigger_event(CacheEvent.DELETE, CacheEventContext(
+            cache_name=cache_name,
+            key=key,
+            old_value=old_value,
+            event_type=CacheEvent.DELETE,
+            timestamp=time.time()
+        ))
+        
         return True
         
     def list_caches(self) -> list[str]:

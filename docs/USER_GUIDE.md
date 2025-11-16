@@ -429,62 +429,75 @@ handler.register_command(
 
 ## Event System
 
-Radish provides a sophisticated event system for monitoring and reacting to cache operations.
+Radish provides a sophisticated event system for monitoring and reacting to cache operations in real-time. The event system emits events whenever caches or stores are updated or deleted.
 
 ### Event Architecture
 
 The event system consists of:
-1. **Event Registry** - Manages event subscriptions and dispatching
+1. **Event Handler** - Manages event subscriptions and dispatching
 2. **Event Context** - Provides comprehensive operation details
-3. **Event Handlers** - User-defined callbacks for specific events
+3. **Event Callbacks** - User-defined functions for specific events
+
+### Automatic Event Emission
+
+Events are automatically emitted for these operations:
+- **SET** - When a key-value pair is created or updated
+- **DELETE** - When a key is deleted
+- **CLEAR** - When a cache is cleared
+- **CREATE_CACHE** - When a new named cache is created
+- **DELETE_CACHE** - When a named cache is deleted
 
 ### Basic Event Handling
 
 ```python
-from src.cache_handler import CacheHandler, CacheEvent, CacheEventContext
+from src.expiring_store import ExpiringStore
+from src.event_handler import EventHandler, CacheEvent, CacheEventContext
 
-# Create the cache handler
-cache = CacheHandler()
+# Create event handler and store
+event_handler = EventHandler()
+store = ExpiringStore(event_handler=event_handler)
 
 # Monitor all SET operations
 def on_value_set(ctx: CacheEventContext):
     print(f"New value in {ctx.cache_name}: {ctx.key} = {ctx.value}")
 
-cache.on(CacheEvent.SET, on_value_set)
+event_handler.on(CacheEvent.SET, on_value_set)
 ```
 
 ### Available Events
 
-- `CacheEvent.GET` - Value retrieval operations
-- `CacheEvent.SET` - Value setting operations
+- `CacheEvent.SET` - Value setting/updating operations
 - `CacheEvent.DELETE` - Key deletion operations
-- `CacheEvent.EXPIRE` - Key expiration events
 - `CacheEvent.CLEAR` - Cache clearing operations
 - `CacheEvent.CREATE_CACHE` - New cache creation
 - `CacheEvent.DELETE_CACHE` - Cache deletion
-- `CacheEvent.LIST_PUSH` - List push operations (LPUSH/RPUSH)
-- `CacheEvent.LIST_POP` - List pop operations (LPOP/RPOP)
+- `CacheEvent.EXPIRE` - Key expiration events (logged but not emitted via event system)
+- `CacheEvent.GET` - Value retrieval (available but not auto-emitted)
 
 ### Event Context
 
 Each event handler receives a `CacheEventContext` with:
-- `cache_name`: Name of the cache being operated on
-- `key`: Key being accessed/modified
+- `cache_name`: Name of the cache being operated on (e.g., "default_store", "users")
+- `key`: Key being accessed/modified (None for cache-level operations)
 - `value`: New value (for SET events)
-- `old_value`: Previous value (for SET/DELETE)
-- `event_type`: Type of event
-- `timestamp`: When the event occurred
+- `old_value`: Previous value (for SET/DELETE events)
+- `event_type`: Type of event (CacheEvent enum)
+- `timestamp`: When the event occurred (Unix timestamp)
 
 ### Event Use Cases
 
-#### 1. Monitoring Cache Access
+#### 1. Logging All Operations
 
 ```python
-def log_access(ctx: CacheEventContext):
-    print(f"Cache accessed: {ctx.cache_name}.{ctx.key}")
-    
-# Monitor all GET operations
-cache.on(CacheEvent.GET, log_access)
+def log_all_events(ctx: CacheEventContext):
+    import datetime
+    ts = datetime.datetime.fromtimestamp(ctx.timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    print(f"[{ts}] {ctx.event_type.value.upper()}: [{ctx.cache_name}] {ctx.key}")
+
+event_handler.on(CacheEvent.SET, log_all_events)
+event_handler.on(CacheEvent.DELETE, log_all_events)
+event_handler.on(CacheEvent.CREATE_CACHE, log_all_events)
+event_handler.on(CacheEvent.DELETE_CACHE, log_all_events)
 ```
 
 #### 2. Cache-Specific Monitoring
@@ -492,50 +505,69 @@ cache.on(CacheEvent.GET, log_access)
 ```python
 def monitor_users(ctx: CacheEventContext):
     print(f"User modified: {ctx.key}")
+    if ctx.old_value:
+        print(f"Old data: {ctx.old_value}")
     print(f"New data: {ctx.value}")
     
 # Monitor only the "users" cache
-cache.on(CacheEvent.SET, monitor_users, cache_name="users")
+event_handler.on(CacheEvent.SET, monitor_users, cache_name="users")
 ```
 
 #### 3. Statistics Collection
 
 ```python
-stats = {"sets": 0, "gets": 0, "deletes": 0}
+stats = {"sets": 0, "deletes": 0, "creates": 0}
 
 def collect_stats(ctx: CacheEventContext):
     if ctx.event_type == CacheEvent.SET:
         stats["sets"] += 1
-    elif ctx.event_type == CacheEvent.GET:
-        stats["gets"] += 1
     elif ctx.event_type == CacheEvent.DELETE:
         stats["deletes"] += 1
+    elif ctx.event_type == CacheEvent.CREATE_CACHE:
+        stats["creates"] += 1
 
 # Monitor multiple events
-for event in [CacheEvent.SET, CacheEvent.GET, CacheEvent.DELETE]:
-    cache.on(event, collect_stats)
+event_handler.on(CacheEvent.SET, collect_stats)
+event_handler.on(CacheEvent.DELETE, collect_stats)
+event_handler.on(CacheEvent.CREATE_CACHE, collect_stats)
 ```
 
-#### 4. Expiration Monitoring
+#### 4. Auditing Sensitive Data
 
 ```python
-def handle_expiry(ctx: CacheEventContext):
-    print(f"Key expired: {ctx.cache_name}.{ctx.key}")
-    # Perform cleanup or logging
-    
-cache.on(CacheEvent.EXPIRE, handle_expiry)
+def audit_sensitive_cache(ctx: CacheEventContext):
+    if ctx.event_type == CacheEvent.SET:
+        print(f"AUDIT: Value updated: {ctx.key}")
+    elif ctx.event_type == CacheEvent.DELETE:
+        print(f"AUDIT: Value deleted: {ctx.key}")
+    elif ctx.event_type == CacheEvent.DELETE_CACHE:
+        print(f"AUDIT: CRITICAL - Sensitive cache deleted!")
+
+# Audit only the sensitive_data cache
+event_handler.on(CacheEvent.SET, audit_sensitive_cache, cache_name="sensitive_data")
+event_handler.on(CacheEvent.DELETE, audit_sensitive_cache, cache_name="sensitive_data")
+event_handler.on(CacheEvent.DELETE_CACHE, audit_sensitive_cache, cache_name="sensitive_data")
 ```
 
 #### 5. Removing Event Handlers
 
 ```python
 # Stop monitoring when needed
-cache.off(CacheEvent.SET, monitor_users, cache_name="users")
+event_handler.off(CacheEvent.SET, monitor_users, cache_name="users")
 ```
+
+### Complete Example
+
+See `examples/event_handling_example.py` for a complete working example demonstrating:
+- Global event handlers
+- Cache-specific handlers
+- Statistics tracking
+- Audit logging
+- Handler removal
 
 ### Thread Safety
 
-All event handling methods are thread-safe and can be used safely in concurrent environments. Event handlers are executed synchronously in the thread that triggered the event.
+All event handling methods are thread-safe and can be used safely in concurrent environments. Event handlers are executed synchronously in the thread that triggered the event. If a handler raises an exception, it is caught and suppressed to prevent affecting cache operations.
 
 ## Command Reference
 
