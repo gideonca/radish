@@ -12,6 +12,7 @@ from typing import Any, Optional, Dict
 from datetime import datetime
 from pathlib import Path
 from .expiring_store import ExpiringStore
+from src.logging_handler import LoggingHandler
 
 
 class PersistenceHandler:
@@ -55,6 +56,8 @@ class PersistenceHandler:
                 daemon=True
             )
             self._backup_thread.start()
+            
+        self.logging_handler = LoggingHandler()
     
     def _create_backup_directory(self):
         """Create the backup directory with proper permissions."""
@@ -63,6 +66,7 @@ class PersistenceHandler:
             os.chmod(self._backup_dir, 0o755)
         except Exception as e:
             print(f"Warning: Error creating backup directory {self._backup_dir}: {e}")
+            self.logging_handler.log_server_event(f"Warning: Error creating backup directory {self._backup_dir}: {e}")
     
     def set_store(self, store: ExpiringStore):
         """
@@ -276,6 +280,7 @@ class PersistenceHandler:
             return backups
         except Exception as e:
             print(f"Error listing backups: {e}")
+            self.logging_handler.log_server_event(f"Error listing backups: {e}")
             return []
     
     def cleanup_old_backups(self, days: int = 30):
@@ -292,8 +297,10 @@ class PersistenceHandler:
                 if filepath.stat().st_mtime < cutoff_time:
                     filepath.unlink()
                     print(f"Deleted old backup: {filepath.name}")
+                    self.logging_handler.log_server_event(f"Deleted old backup: {filepath.name}")
         except Exception as e:
             print(f"Error cleaning up old backups: {e}")
+            self.logging_handler.log_server_event(f"Error cleaning up old backups: {e}")
     
     def get_backup_dir(self) -> Path:
         """
@@ -311,9 +318,11 @@ class PersistenceHandler:
             
             if not self._stop_backup.is_set():
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Running automatic backup...")
+                self.logging_handler.log_server_event("Running automatic backup...")
                 results = self.backup_all()
                 success_count = sum(1 for v in results.values() if v)
                 print(f"Backup completed: {success_count}/{len(results)} successful")
+                self.logging_handler.log_server_event(f"Backup completed: {success_count}/{len(results)} successful")
     
     def stop(self):
         """Stop background backup thread."""

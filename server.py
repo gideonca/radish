@@ -14,6 +14,7 @@ from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
 from src.persistence_handler import PersistenceHandler
 from src.event_handler import EventHandler
+from src.logging_handler import LoggingHandler
 
 # Initialize event handler, logging, store, persistence, and command handler
 event_handler = EventHandler()
@@ -25,6 +26,7 @@ persistence_handler = PersistenceHandler(
 )
 # command_handler = CommandHandler(store, logging_handler)
 command_handler = CommandHandler(store)
+logging_handler = LoggingHandler()
 
 def handle_client_connection(client_socket):
     """
@@ -134,6 +136,14 @@ def start_server(host='127.0.0.1', port=6379):
     print(f'Backups are being written to: {persistence_handler.get_backup_dir()}')
     print(f'Auto-backup interval: 5 minutes')
     
+    logging_handler.log_server_message("\n" + radish_colorized + "\n")
+    logging_handler.log_server_message("\n" + "\n".join(radish) + "\n")
+    logging_handler.log_server_message("Server started")
+    logging_handler.log_server_message(f"Server started on {host}:{port}")
+    logging_handler.log_server_message(f"Backups are being written to: {persistence_handler.get_backup_dir()}")
+    logging_handler.log_server_message(f"Auto-backup interval: 5 minutes")
+    
+    
     # Log server start
     # logging_handler.log_server_event(f"Server started on {host}:{port}")
     
@@ -148,19 +158,22 @@ def start_server(host='127.0.0.1', port=6379):
             client_handler.start()
     except KeyboardInterrupt:
         print('\nShutting down server...')
-        # logging_handler.log_server_event("Server shutting down (KeyboardInterrupt)")
+        logging_handler.log_server_event('Server shutting down...')
         
         # Perform final backup before shutdown
         print('Performing final backup...')
+        logging_handler.log_server_event('Performing final backup...')
         persistence_handler.backup_all()
     finally:
         print('Cleaning up resources...')
+        logging_handler.log_server_event('Cleaning up resources...')
         # Stop handlers
         persistence_handler.stop()
         store.stop()
         # Close the server socket
         server.close()
         print('Server shutdown complete.')
+        logging_handler.log_server_event('Server shutdown complete.')
         
 if __name__ == '__main__':
     start_server()
