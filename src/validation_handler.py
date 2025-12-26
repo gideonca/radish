@@ -20,6 +20,7 @@ class ValidationHandler:
         self._command_specs: Dict[str, Dict[str, Any]] = {
             'PING':    {'min_args': 1, 'max_args': 1, 'usage': 'PING'},
             'EXIT':    {'min_args': 1, 'max_args': 1, 'usage': 'EXIT'},
+            'HISTORY': {'min_args': 1, 'max_args': 1, 'usage': 'HISTORY'},
             'EXPIRE':  {'min_args': 3, 'max_args': 3, 'usage': 'EXPIRE key seconds',
                        'types': [str, str, int]},
             'SET':     {'min_args': 3, 'max_args': 3, 'usage': 'SET key value'},

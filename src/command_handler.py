@@ -34,10 +34,11 @@ class CommandHandler:
         self.event_handler = EventHandler()
         self.validation_handler = ValidationHandler()
         self.store = store
-        self.command_history = []  # Stores last 20 commands
-        self.max_history_size = 20
+        self.command_history = []  # Stores last n commands where n = max_history_size 
+        self.max_history_size = 5 # Increased to 20 later in _handle_history
         self._handlers = {
             'PING': self._handle_ping,
+            'HISTORY' : self._handle_history,
             'ECHO': self._handle_echo,
             'SET': self._handle_set,
             'GET': self._handle_get,
@@ -115,6 +116,14 @@ class CommandHandler:
             handler = self._handlers.get(command)
             if not handler:
                 raise ValueError(f'Unknown command: {command}')
+            
+            # Record command in history
+            command_history_entry = ' '.join(command_parts)
+            self.command_history.append(command_history_entry)
+            
+            # Remove oldest if exceeding max size
+            if len(self.command_history) > self.max_history_size:
+                self.command_history.pop(0)
                 
             response = handler(command_parts[1:])
             self.event_handler.handle_response(response, send_response)
@@ -377,7 +386,8 @@ class CommandHandler:
 
     def _handle_cache_get_all(self, args: List[str]) -> str:
         """
-        Handle CACHEGETALL command.
+        Handle CACHEGETALL command.        
+
         
         Args:
             args: [cache_name]
@@ -473,4 +483,19 @@ class CommandHandler:
             num_items = len(store.keys())
             ttl = store.default_ttl or 'No'
             result.append(f'- {store_name} ({num_items} items, {ttl} TTL)')
+        return '\n'.join(result)
+    
+    def _handle_history(self, args: List[str]) -> str:
+        """
+        Handle HISTORY command.
+        
+        Returns:
+            str: Formatted string of the last 20 commands executed
+        """
+        if not self.command_history:
+            return 'No commands in history'
+            
+        result = ['Command History:']
+        for i, cmd in enumerate(self.command_history[-self.max_history_size:], 1):
+            result.append(f'{i}: {cmd}')
         return '\n'.join(result)
