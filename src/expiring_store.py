@@ -30,6 +30,7 @@ class ExpiringStore:
         self.cleanup_interval = cleanup_interval
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
+        self.event_handler = None  # Placeholder for an EventHandler instance
         
         # Start the cleanup thread
         self._thread = threading.Thread(
