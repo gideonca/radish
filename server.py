@@ -132,7 +132,6 @@ def start_server(host='127.0.0.1', port=6379):
     print("\n" + "\n".join(radish) + "\n")
     
     print(f'Server listening on {host}:{port}')
-    # print(f'Logs are being written to: {logging_handler.get_log_file_path()}')
     print(f'Backups are being written to: {persistence_handler.get_backup_dir()}')
     print(f'Auto-backup interval: 5 minutes')
     
@@ -143,9 +142,6 @@ def start_server(host='127.0.0.1', port=6379):
     logging_handler.log_server_message(f"Backups are being written to: {persistence_handler.get_backup_dir()}")
     logging_handler.log_server_message(f"Auto-backup interval: 5 minutes")
     
-    
-    # Log server start
-    # logging_handler.log_server_event(f"Server started on {host}:{port}")
     
     try:
         while True:
@@ -158,22 +154,18 @@ def start_server(host='127.0.0.1', port=6379):
             client_handler.start()
     except KeyboardInterrupt:
         print('\nShutting down server...')
-        logging_handler.log_server_event('Server shutting down...')
         
         # Perform final backup before shutdown
         print('Performing final backup...')
-        logging_handler.log_server_event('Performing final backup...')
         persistence_handler.backup_all()
     finally:
         print('Cleaning up resources...')
-        logging_handler.log_server_event('Cleaning up resources...')
         # Stop handlers
         persistence_handler.stop()
         store.stop()
         # Close the server socket
         server.close()
         print('Server shutdown complete.')
-        logging_handler.log_server_event('Server shutdown complete.')
         
 if __name__ == '__main__':
     start_server()

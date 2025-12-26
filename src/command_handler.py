@@ -34,6 +34,8 @@ class CommandHandler:
         self.event_handler = EventHandler()
         self.validation_handler = ValidationHandler()
         self.store = store
+        self.command_history = []  # Stores last 20 commands
+        self.max_history_size = 20
         self._handlers = {
             'PING': self._handle_ping,
             'ECHO': self._handle_echo,
