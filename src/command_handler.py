@@ -35,10 +35,11 @@ class CommandHandler:
         self.validation_handler = ValidationHandler()
         self.store = store
         self.command_history = []  # Stores last n commands where n = max_history_size 
-        self.max_history_size = 5 # Increased to 20 later in _handle_history
+        self.max_history_size = 0 # Increase size, if size == 0 there is no limit
         self._handlers = {
             'PING': self._handle_ping,
             'HISTORY' : self._handle_history,
+            'REPLAY' : self._handle_replay,
             'ECHO': self._handle_echo,
             'SET': self._handle_set,
             'GET': self._handle_get,
@@ -118,12 +119,14 @@ class CommandHandler:
                 raise ValueError(f'Unknown command: {command}')
             
             # Record command in history
-            command_history_entry = ' '.join(command_parts)
-            self.command_history.append(command_history_entry)
+            if command != 'HISTORY' and command != 'REPLAY': # Avoid logging HISTORY and REPLAY commands
+                command_history_entry = ' '.join(command_parts)
+                self.command_history.append(command_history_entry)
             
             # Remove oldest if exceeding max size
-            if len(self.command_history) > self.max_history_size:
-                self.command_history.pop(0)
+            if self.max_history_size > 0: # No limit if == 0
+                if len(self.command_history) > self.max_history_size:
+                    self.command_history.pop(0)
                 
             response = handler(command_parts[1:])
             self.event_handler.handle_response(response, send_response)
@@ -389,7 +392,7 @@ class CommandHandler:
         Handle CACHEGETALL command.        
 
         
-        Args:
+        Args:handle_command
             args: [cache_name]
             
         Returns:
@@ -499,3 +502,28 @@ class CommandHandler:
         for i, cmd in enumerate(self.command_history[-self.max_history_size:], 1):
             result.append(f'{i}: {cmd}')
         return '\n'.join(result)
+    
+    def _handle_replay(self, args: List[str]) -> str:
+        """
+        Handle REPLAY command.
+        
+        Returns:
+            str: 'OK' if replayed successfully, error message otherwise
+        """
+        
+        print("Replaying command from history...")
+        
+        cmd = self.command_history[int(args[0]) - 1] #Get the command to replay, adjust for 0 indexing
+        
+        print("Replaying command: ", cmd)
+        
+        # for cmd in self.command_history:
+        command_parts = cmd.split(' ')
+        command = command_parts[0].upper()
+        print("Command to replay: ", command)
+        handler = self._handlers.get(command)
+        print("Handler found: ", handler)
+        if handler:
+            handler(command_parts[1:])
+        
+        return 'OK'
