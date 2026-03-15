@@ -495,11 +495,16 @@ class CommandHandler:
         Returns:
             str: Formatted string of the last 20 commands executed
         """
-        if not self.command_history:
+        if self.max_history_size == 0:
+            history = list(self.command_history)
+        else:
+            history = self.command_history[-self.max_history_size:]
+
+        if not history:
             return 'No commands in history'
-            
+
         result = ['Command History:']
-        for i, cmd in enumerate(self.command_history[-self.max_history_size:], 1):
+        for i, cmd in enumerate(history, 1):
             result.append(f'{i}: {cmd}')
         return '\n'.join(result)
     
@@ -510,20 +515,33 @@ class CommandHandler:
         Returns:
             str: 'OK' if replayed successfully, error message otherwise
         """
-        
-        print("Replaying command from history...")
-        
-        cmd = self.command_history[int(args[0]) - 1] #Get the command to replay, adjust for 0 indexing
-        
-        print("Replaying command: ", cmd)
-        
-        # for cmd in self.command_history:
-        command_parts = cmd.split(' ')
+        import shlex
+
+        if self.max_history_size == 0:
+            history = list(self.command_history)
+        else:
+            history = self.command_history[-self.max_history_size:]
+
+        if not history:
+            return 'No commands in history'
+
+        try:
+            index = int(args[0])
+        except (TypeError, ValueError):
+            return 'Invalid history index'
+
+        if index < 1 or index > len(history):
+            return 'History index out of range'
+
+        cmd = history[index - 1]
+        command_parts = shlex.split(cmd)
+        if not command_parts:
+            return 'Invalid command in history'
+
+        command_parts = self._preprocess_set_command(command_parts)
         command = command_parts[0].upper()
-        print("Command to replay: ", command)
         handler = self._handlers.get(command)
-        print("Handler found: ", handler)
-        if handler:
-            handler(command_parts[1:])
-        
-        return 'OK'
+        if not handler:
+            return f'Unknown command: {command}'
+
+        return handler(command_parts[1:])
