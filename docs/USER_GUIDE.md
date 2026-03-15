@@ -70,9 +70,18 @@ See the [HTTP Server Guide](HTTP_SERVER_GUIDE.md) for HTTP API access, or use a 
 
 Verify the server is responding:
 
-```
+```text
 > PING
 PONG
+```
+
+### ECHO - Echo Text
+
+Return the provided text exactly as sent:
+
+```text
+> ECHO Hello Radish
+Hello Radish
 ```
 
 ### SET - Store a Value
@@ -142,6 +151,31 @@ Show all key-value pairs in the default store:
 mykey: Hello World
 username: alice
 counter: 42
+```
+
+## Command History and Replay
+
+Radish keeps a history of executed commands (excluding `HISTORY` and `REPLAY`).
+
+### HISTORY - Show Command History
+
+Display the command history with index numbers:
+
+```text
+> HISTORY
+Command History:
+1: SET mykey "Hello World"
+2: GET mykey
+3: EXPIRE mykey 60
+```
+
+### REPLAY - Re-run a Command
+
+Replay a previous command by its history index:
+
+```text
+> REPLAY 2
+Hello World
 ```
 
 ## Working with Lists
@@ -577,7 +611,10 @@ All event handling methods are thread-safe and can be used safely in concurrent 
 |---------|--------|-------------|
 | `PING` | `PING` | Test server connection |
 | `EXIT` | `EXIT` | Close the connection |
+| `ECHO` | `ECHO message ...` | Echo the provided text |
 | `INSPECT` | `INSPECT` | Show all key-value pairs |
+| `HISTORY` | `HISTORY` | Show command history |
+| `REPLAY` | `REPLAY index` | Replay a command from history |
 
 ### Key-Value Operations
 

@@ -13,8 +13,8 @@
   - [ ] Implementation of LRU
   - [x] Logging of transaction history
   - [x] Continual persistence to avoid crashes and restore state
-  - [ ] Key up and down rotates through command history so you an replay commands
-  - [ ] Setup endpoint to stream logs from server via the http server
+  - [x] Key up and down rotates through command history so you an replay commands
+  - [x] Setup endpoint to stream logs from server via the http server
   - [x] Setup named cache system
 
 # Lists
