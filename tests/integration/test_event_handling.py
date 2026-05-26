@@ -10,8 +10,8 @@ import sys
 import os
 import time
 
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.expiring_store import ExpiringStore
 from src.event_handler import EventHandler, CacheEvent, CacheEventContext

@@ -95,9 +95,15 @@ For complete command reference and examples, see the **[User Guide](docs/USER_GU
 
 ## Development
 
-Run the test suite:
+Run the unit test suite:
 ```bash
-python3 -m unittest discover tests
+python3 -m unittest discover -s tests/unit
+```
+
+Run integration tests (requires a running server):
+```bash
+python3 -m unittest discover -s tests/integration
+```
 ```
 
 ## Implementation Details
@@ -155,31 +161,35 @@ radish/
 │   ├── persistence_handler.py         # Data persistence
 │   └── stats_handler.py               # Statistics tracking
 ├── tests/
-│   ├── test_validation_handler.py     # Validation system tests
-│   ├── test_command_handler.py        # Command handler tests
-│   ├── test_cache_handler.py          # Cache handler tests
-│   ├── test_enhanced_cache_handler.py # Extended cache features
-│   ├── test_enhanced_features.py      # Additional functionality
-│   └── test_expiration_manager.py     # TTL and expiration tests
+│   ├── unit/
+│   │   ├── test_cache_handler.py      # Cache handler tests
+│   │   ├── test_command_handler.py    # Command handler tests
+│   │   ├── test_enhanced_cache_handler.py
+│   │   ├── test_enhanced_features.py
+│   │   ├── test_expiration_manager.py # TTL and expiration tests
+│   │   └── test_validation_handler.py # Validation system tests
+│   └── integration/
+│       ├── test_connection.py         # TCP connectivity tests
+│       ├── test_server_connection.py  # Server PING integration test
+│       ├── test_cachegetall.py        # CACHEGETALL command test
+│       ├── test_event_handling.py     # Event system integration test
+│       └── test_persistence.py        # Backup/restore integration test
+├── examples/
+│   ├── event_handling_example.py      # Event system example
+│   ├── http_client.py                 # HTTP API client example
+│   └── named_cache.py                 # Named cache usage example
+├── scripts/
+│   ├── test_commands.sh               # Shell test for basic commands
+│   ├── test_named_cache.sh            # Shell test for named caches
+│   └── test_http.sh                   # Shell test for HTTP API
 ├── docs/
 │   ├── USER_GUIDE.md                  # Complete usage guide
 │   ├── NAMED_CACHE_GUIDE.md           # Named cache system guide
 │   ├── PERSISTENCE_GUIDE.md           # Backup and restore guide
 │   ├── HTTP_SERVER_GUIDE.md           # HTTP API documentation
 │   └── TODO.md                        # Project roadmap and tasks
-├── examples/
-│   └── event_handling_example.py      # Event system example
-├── scripts/
-│   ├── test_commands.sh               # Test script for common commands
-│   ├── test_named_cache.sh            # Test script for named caches
-│   ├── test_http.sh                   # Test script for HTTP API
-│   ├── test_cachegetall.py            # Test script for CACHEGETALL
-│   ├── example_named_cache.py         # Python example for named caches
-│   └── example_http_client.py         # Python HTTP client example
 ├── README.md                          # Project documentation
-├── MITLicense.txt                     # License file
-├── server.py                          # Main TCP server (port 6379)
-└── http_server.py                     # HTTP API server (port 8000)
+└── MITLicense.txt                     # License file
 ```
 
 ## Use Cases
