@@ -162,7 +162,7 @@ Server shutdown complete.
 Use the provided test script:
 
 ```bash
-python3 scripts/test_persistence.py
+python3 tests/integration/test_persistence.py
 ```
 
 This script:

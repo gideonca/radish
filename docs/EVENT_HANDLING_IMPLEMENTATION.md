@@ -59,7 +59,7 @@ The following events are now automatically emitted:
 
 ### New Files Created
 
-1. **scripts/test_event_handling.py**
+1. **tests/integration/test_event_handling.py**
    - Comprehensive test script demonstrating all event types
    - Tests global and cache-specific event handlers
    - Tests handler registration and removal
@@ -87,7 +87,7 @@ All functionality has been tested and verified:
 
 ```bash
 # Comprehensive test
-python3 scripts/test_event_handling.py
+python3 tests/integration/test_event_handling.py
 
 # Practical example
 python3 examples/event_handling_example.py

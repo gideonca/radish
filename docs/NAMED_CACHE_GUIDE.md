@@ -192,7 +192,7 @@ bash scripts/test_named_cache.sh
 
 ### Python Example
 ```bash
-python scripts/example_named_cache.py
+python examples/named_cache.py
 ```
 
 ## Error Handling
