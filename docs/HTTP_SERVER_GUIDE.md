@@ -1,10 +1,10 @@
 # HTTP Server Guide
 
-This guide explains how to use the vanilla Python HTTP server to interact with Radish over HTTP.
+This guide explains how to use the HTTP server to interact with Radish over HTTP.
 
 ## Overview
 
-The `http_server_vanilla.py` provides an HTTP REST API wrapper around the Radish TCP server. It uses **only Python's built-in modules** - no external dependencies required!
+The `http_server.py` provides an HTTP REST API wrapper around the Radish TCP server. It uses **only Python's built-in modules** - no external dependencies required!
 
 ## Features
 
@@ -30,7 +30,7 @@ The TCP server will start on port **6379** (default Redis port).
 
 In another terminal:
 ```bash
-python http_server_vanilla.py
+python http_server.py
 ```
 
 The HTTP API will be available at **http://localhost:8000**
@@ -38,7 +38,7 @@ The HTTP API will be available at **http://localhost:8000**
 You should see:
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║           Radish HTTP API Server (Vanilla Python)         ║
+║           Radish HTTP API Server                          ║
 ╠═══════════════════════════════════════════════════════════╣
 ║  HTTP Server: http://localhost:8000                       ║
 ║  Radish TCP:  127.0.0.1:6379                              ║

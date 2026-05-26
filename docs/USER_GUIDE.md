@@ -40,10 +40,11 @@ Start the Radish server on the default port (6379):
 python server.py
 ```
 
-The server will start and listen for connections:
+The server will start, display a banner, and listen for connections:
 ```
-Radish server starting on 0.0.0.0:6379
-Press Ctrl+C to stop
+Server listening on 127.0.0.1:6379
+Backups are being written to: ~/.radish/cache_backup
+Auto-backup interval: 5 minutes
 ```
 
 ### Connecting to the Server
@@ -113,7 +114,7 @@ alice
 If the key doesn't exist:
 ```
 > GET nonexistent
-(nil)
+NULL
 ```
 
 ### DEL - Delete a Key

@@ -144,12 +144,14 @@ Radish is built on a robust, modular architecture with clear separation of conce
 ```
 radish/
 ├── server.py                          # Main server implementation
+├── http_server.py                     # HTTP API server (port 8000)
 ├── src/
 │   ├── validation_handler.py          # Command validation and registry
 │   ├── command_handler.py             # Command processing
 │   ├── cache_handler.py               # Cache management and events
 │   ├── expiring_store.py              # Key-value store with TTL and named caches
 │   ├── event_handler.py               # Event system
+│   ├── logging_handler.py             # Logging
 │   ├── persistence_handler.py         # Data persistence
 │   └── stats_handler.py               # Statistics tracking
 ├── tests/
@@ -160,9 +162,13 @@ radish/
 │   ├── test_enhanced_features.py      # Additional functionality
 │   └── test_expiration_manager.py     # TTL and expiration tests
 ├── docs/
+│   ├── USER_GUIDE.md                  # Complete usage guide
 │   ├── NAMED_CACHE_GUIDE.md           # Named cache system guide
+│   ├── PERSISTENCE_GUIDE.md           # Backup and restore guide
 │   ├── HTTP_SERVER_GUIDE.md           # HTTP API documentation
 │   └── TODO.md                        # Project roadmap and tasks
+├── examples/
+│   └── event_handling_example.py      # Event system example
 ├── scripts/
 │   ├── test_commands.sh               # Test script for common commands
 │   ├── test_named_cache.sh            # Test script for named caches
@@ -171,7 +177,7 @@ radish/
 │   ├── example_named_cache.py         # Python example for named caches
 │   └── example_http_client.py         # Python HTTP client example
 ├── README.md                          # Project documentation
-├── requirements.txt                   # Project dependencies
+├── MITLicense.txt                     # License file
 ├── server.py                          # Main TCP server (port 6379)
 └── http_server.py                     # HTTP API server (port 8000)
 ```

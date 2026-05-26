@@ -187,12 +187,12 @@ DELETECACHE sessions
 
 ### Bash Example
 ```bash
-./test_named_cache.sh
+bash scripts/test_named_cache.sh
 ```
 
 ### Python Example
 ```bash
-python example_named_cache.py
+python scripts/example_named_cache.py
 ```
 
 ## Error Handling
