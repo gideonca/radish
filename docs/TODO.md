@@ -16,6 +16,7 @@
   - [x] Key up and down rotates through command history so you an replay commands
   - [x] Setup endpoint to stream logs from server via the http server
   - [x] Setup named cache system
+  - [ ] Add support for passing in code at runtime for creating commands with a REGISTER command
 
 # Lists
   - [x] Create a list (RPUSH -> Return num elements as RESP int)
