@@ -4,10 +4,33 @@ Command handler for the Reddish server.
 This module implements a Redis-like command handler using the command pattern.
 It processes incoming commands and manages interactions with the data store.
 """
-from typing import List, Optional, Any, Callable, Dict, Tuple
+import inspect
+from typing import List, Callable, Dict
 from .expiring_store import ExpiringStore
 from .validation_handler import ValidationHandler
 from .event_handler import EventHandler
+
+
+def command(*names: str):
+    """
+    Decorator that registers a handler method for one or more command names.
+
+    Usage::
+
+        @command('SET')
+        def _handle_set(self, args): ...
+
+        @command('DEL', 'LPOP')   # alias multiple names to one handler
+        def _handle_del(self, args): ...
+
+    The decorated method gains a ``_commands`` attribute (list of upper-cased
+    names) which ``CommandHandler.__init__`` discovers automatically via
+    ``inspect``.  No manual dispatch table is needed.
+    """
+    def decorator(func):
+        func._commands = [n.upper() for n in names]
+        return func
+    return decorator
 
 class CommandHandler:
     """
@@ -36,31 +59,13 @@ class CommandHandler:
         self.store = store
         self.command_history = []  # Stores last n commands where n = max_history_size 
         self.max_history_size = 0 # Increase size, if size == 0 there is no limit
-        self._handlers = {
-            'PING': self._handle_ping,
-            'HISTORY' : self._handle_history,
-            'REPLAY' : self._handle_replay,
-            'ECHO': self._handle_echo,
-            'SET': self._handle_set,
-            'GET': self._handle_get,
-            'DEL': self._handle_del,
-            'LPOP': self._handle_del,  # LPOP uses same handler as DEL
-            'EXPIRE': self._handle_expire,
-            'LPUSH': self._handle_lpush,
-            'RPUSH': self._handle_rpush,
-            'INSPECT': self._handle_inspect,
-            'CREATECACHE': self._handle_create_cache,
-            'DELETECACHE': self._handle_delete_cache,
-            'LISTCACHES': self._handle_list_caches,
-            'CACHESET': self._handle_cache_set,
-            'CACHEGET': self._handle_cache_get,
-            'CACHEDEL': self._handle_cache_del,
-            'CACHEKEYS': self._handle_cache_keys,
-            'CACHEGETALL': self._handle_cache_get_all,
-            'CREATESTORE': self._handle_create_store,
-            'DELETESTORE': self._handle_delete_store,
-            'LISTSTORES': self._handle_list_stores
-        }
+
+        # Auto-discover handlers: any method decorated with @command(...) is
+        # registered here.  No manual mapping needed — just add a new method.
+        self._handlers: Dict[str, Callable] = {}
+        for _, method in inspect.getmembers(self, predicate=inspect.ismethod):
+            for cmd in getattr(method, '_commands', []):
+                self._handlers[cmd] = method
 
     def _preprocess_set_command(self, command_parts: List[str]) -> List[str]:
         """
@@ -135,6 +140,7 @@ class CommandHandler:
             
         return True
 
+    @command('PING')
     def _handle_ping(self, args: List[str]) -> str:
         """Handle PING command."""
         return r"""
@@ -153,6 +159,7 @@ class CommandHandler:
                     I LIVE
                 """
 
+    @command('ECHO')
     def _handle_echo(self, args: List[str]) -> str:
         """
         Handle ECHO command.
@@ -165,6 +172,7 @@ class CommandHandler:
         """
         return ' '.join(args)
 
+    @command('SET')
     def _handle_set(self, args: List[str]) -> str:
         """
         Handle SET command.
@@ -179,6 +187,7 @@ class CommandHandler:
         self.store.set(key, value)
         return 'OK'
 
+    @command('GET')
     def _handle_get(self, args: List[str]) -> str:
         """
         Handle GET command.
@@ -192,6 +201,7 @@ class CommandHandler:
         key = args[0]
         return str(self.store.get(key, 'NULL'))
 
+    @command('DEL', 'LPOP')
     def _handle_del(self, args: List[str]) -> str:
         """
         Handle DEL/LPOP command.
@@ -208,6 +218,7 @@ class CommandHandler:
             return 'OK'
         return 'NULL'
 
+    @command('EXPIRE')
     def _handle_expire(self, args: List[str]) -> str:
         """
         Handle EXPIRE command.
@@ -225,6 +236,7 @@ class CommandHandler:
             return 'OK'
         return 'NULL'
 
+    @command('LPUSH')
     def _handle_lpush(self, args: List[str]) -> str:
         """
         Handle LPUSH command.
@@ -244,6 +256,7 @@ class CommandHandler:
         self.store.set(key, current)
         return 'OK'
 
+    @command('RPUSH')
     def _handle_rpush(self, args: List[str]) -> str:
         """
         Handle RPUSH command.
@@ -262,6 +275,7 @@ class CommandHandler:
         self.store.set(key, current)
         return 'OK'
 
+    @command('INSPECT')
     def _handle_inspect(self, args: List[str]) -> str:
         """
         Handle INSPECT command.
@@ -276,6 +290,7 @@ class CommandHandler:
         result.append('END')
         return '\n'.join(result)
 
+    @command('CREATECACHE')
     def _handle_create_cache(self, args: List[str]) -> str:
         """
         Handle CREATECACHE command.
@@ -291,6 +306,7 @@ class CommandHandler:
             return 'OK'
         return f'Cache {cache_name} already exists'
 
+    @command('DELETECACHE')
     def _handle_delete_cache(self, args: List[str]) -> str:
         """
         Handle DELETECACHE command.
@@ -306,6 +322,7 @@ class CommandHandler:
             return 'OK'
         return f'Cache {cache_name} does not exist'
 
+    @command('LISTCACHES')
     def _handle_list_caches(self, args: List[str]) -> str:
         """
         Handle LISTCACHES command.
@@ -322,6 +339,7 @@ class CommandHandler:
             result.append(f'- {cache} ({size} items)')
         return '\n'.join(result)
 
+    @command('CACHESET')
     def _handle_cache_set(self, args: List[str]) -> str:
         """
         Handle CACHESET command.
@@ -342,6 +360,7 @@ class CommandHandler:
             return 'OK'
         return f'Failed to set {key} in cache {cache_name}'
 
+    @command('CACHEGET')
     def _handle_cache_get(self, args: List[str]) -> str:
         """
         Handle CACHEGET command.
@@ -356,6 +375,7 @@ class CommandHandler:
         value = self.store.cache_get(cache_name, key, 'NULL')
         return str(value)
 
+    @command('CACHEDEL')
     def _handle_cache_del(self, args: List[str]) -> str:
         """
         Handle CACHEDEL command.
@@ -371,6 +391,7 @@ class CommandHandler:
             return 'OK'
         return f'Key {key} not found in cache {cache_name}'
 
+    @command('CACHEKEYS')
     def _handle_cache_keys(self, args: List[str]) -> str:
         """
         Handle CACHEKEYS command.
@@ -387,6 +408,7 @@ class CommandHandler:
             return f'No keys in cache {cache_name}'
         return '\n'.join(keys)
 
+    @command('CACHEGETALL')
     def _handle_cache_get_all(self, args: List[str]) -> str:
         """
         Handle CACHEGETALL command.        
@@ -411,6 +433,7 @@ class CommandHandler:
         return json.dumps(cache_data, indent=2)
 
 
+    @command('CREATESTORE')
     def _handle_create_store(self, args: List[str]) -> str:
         """
         Handle CREATESTORE command.
@@ -432,6 +455,7 @@ class CommandHandler:
         except Exception as e:
             return f'Error creating store: {str(e)}'
 
+    @command('DELETESTORE')
     def _handle_delete_store(self, args: List[str]) -> str:
         """
         Handle DELETESTORE command.
@@ -458,6 +482,7 @@ class CommandHandler:
         del cache[store_name]
         return 'OK'
 
+    @command('LISTSTORES')
     def _handle_list_stores(self, args: List[str]) -> str:
         """
         Handle LISTSTORES command.
@@ -488,6 +513,7 @@ class CommandHandler:
             result.append(f'- {store_name} ({num_items} items, {ttl} TTL)')
         return '\n'.join(result)
     
+    @command('HISTORY')
     def _handle_history(self, args: List[str]) -> str:
         """
         Handle HISTORY command.
@@ -508,6 +534,7 @@ class CommandHandler:
             result.append(f'{i}: {cmd}')
         return '\n'.join(result)
     
+    @command('REPLAY')
     def _handle_replay(self, args: List[str]) -> str:
         """
         Handle REPLAY command.
