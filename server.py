@@ -10,23 +10,7 @@ The server maintains data in an ExpiringStore which automatically handles key ex
 
 import socket
 import threading
-from src.expiring_store import ExpiringStore
-from src.command_handler import CommandHandler
-from src.persistence_handler import PersistenceHandler
-from src.event_handler import EventHandler
-from src.logging_handler import LoggingHandler
-
-# Initialize event handler, logging, store, persistence, and command handler
-event_handler = EventHandler()
-# logging_handler = LoggingHandler()
-store = ExpiringStore()
-persistence_handler = PersistenceHandler(
-    auto_backup_interval=300,  # Backup every 5 minutes
-    store=store
-)
-# command_handler = CommandHandler(store, logging_handler)
-command_handler = CommandHandler(store)
-logging_handler = LoggingHandler()
+from src.factory import ServiceFactory
 
 def handle_client_connection(client_socket):
     """
@@ -43,6 +27,8 @@ def handle_client_connection(client_socket):
         The connection is automatically closed when the client disconnects or
         sends an EXIT command.
     """
+    command_handler = ServiceFactory.get_command_handler()
+
     def send_response(response: bytes):
         """
         Send a response back to the client.
@@ -87,6 +73,12 @@ def start_server(host='127.0.0.1', port=6379):
         The server runs indefinitely until interrupted. Each client connection
         is handled in a separate thread.
     """
+    # Initialize the factory
+    ServiceFactory.initialize(auto_backup_interval=300)
+    
+    # Get handlers from factory
+    persistence_handler = ServiceFactory.get_persistence()
+    logging_handler = ServiceFactory.get_logging_handler()
     RESET = "\033[0m"
     GREEN = "\033[32m"
     LIME = "\033[92m"

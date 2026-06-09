@@ -23,6 +23,8 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 - **[Named Cache Guide](docs/NAMED_CACHE_GUIDE.md)** - Comprehensive guide to using named caches for organizing data
 - **[Persistence Guide](docs/PERSISTENCE_GUIDE.md)** - Automatic backups, restore, and recovery procedures
 - **[HTTP Server Guide](docs/HTTP_SERVER_GUIDE.md)** - Complete HTTP API documentation with examples
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - Detailed architecture, service factory, and command organization
+- **[Extending Radish](docs/EXTENDING.md)** - How to add custom commands and extend the system
 - **[Project Roadmap](docs/TODO.md)** - Planned features and development tasks
 
 ## Quick Start
@@ -110,31 +112,62 @@ python3 -m unittest discover -s tests/integration
 
 ### Architecture
 
-Radish is built on a robust, modular architecture with clear separation of concerns:
+Radish is built on a robust, modular architecture with clear separation of concerns. The codebase follows a plugin-inspired design with organized command modules and a factory pattern for service initialization.
 
-- **Validation Layer** (`validation_handler.py`)
-  - Registry-based command validation
-  - Argument count and type checking
-  - Extensible command specification system
-  - Built-in usage documentation
+#### Service Factory Pattern
+The `ServiceFactory` class (`src/factory.py`) manages all service singletons with explicit initialization:
 
-- **Command Processing** (`command_handler.py`)
-  - Command routing and execution
-  - Error handling and response formatting
-  - Integration with validation and cache systems
-  - Support for custom command registration
+- **No import-time side effects** - Services are created on-demand when `ServiceFactory.initialize()` is called
+- **Easy testing** - Call `ServiceFactory.reset()` between tests
+- **Clear dependency order** - Initialization happens in a controlled sequence
 
-- **Cache Management** (`cache_handler.py`)
-  - Event-driven architecture
-  - Thread-safe operations
-  - Comprehensive event system
-  - Support for multiple cache instances
+Managed services:
+- `ExpiringStore` - Core data store with TTL support
+- `CommandHandler` - Command routing and execution
+- `PersistenceHandler` - Automatic backups
+- `EventHandler` - Event system
+- `LoggingHandler` - Logging system
 
-- **Data Store** (`expiring_store.py`)
+#### Command Module Organization
+Commands are organized into logical domain modules for better maintainability:
+
+- **String Commands** (`src/commands/string_commands.py`)
+  - SET, GET, DEL, LPOP, EXPIRE
+  
+- **List Commands** (`src/commands/list_commands.py`)
+  - LPUSH, RPUSH
+  
+- **Cache Commands** (`src/commands/cache_commands.py`)
+  - CREATECACHE, DELETECACHE, LISTCACHES
+  - CACHESET, CACHEGET, CACHEDEL, CACHEKEYS, CACHEGETALL
+  
+- **Store Commands** (`src/commands/store_commands.py`)
+  - CREATESTORE, DELETESTORE, LISTSTORES
+  
+- **Utility Commands** (`src/commands/utility_commands.py`)
+  - PING, ECHO, INSPECT, HISTORY, REPLAY
+
+#### Core Layers
+
+- **Data Store** (`src/expiring_store.py`)
   - TTL-based key expiration
   - Automatic background cleanup
   - Thread-safe value storage
-  - Support for various data types
+  - Named cache support
+
+- **Validation Layer** (`src/validation_handler.py`)
+  - Registry-based command validation
+  - Argument count and type checking
+  - Extensible command specification system
+
+- **Cache Management** (`src/cache_handler.py`)
+  - Event-driven architecture
+  - Comprehensive event system
+  - Support for multiple cache instances
+
+- **Event System** (`src/event_handler.py`)
+  - Event-driven architecture for extensibility
+  - Monitor and react to cache operations
 
 ### Technical Features
 
@@ -149,17 +182,26 @@ Radish is built on a robust, modular architecture with clear separation of conce
 
 ```
 radish/
-├── server.py                          # Main server implementation
+├── server.py                          # Main server entry point
 ├── http_server.py                     # HTTP API server (port 8000)
 ├── src/
+│   ├── factory.py                     # Service factory for initialization
 │   ├── validation_handler.py          # Command validation and registry
-│   ├── command_handler.py             # Command processing
+│   ├── command_handler.py             # Command dispatcher (uses command mixins)
 │   ├── cache_handler.py               # Cache management and events
 │   ├── expiring_store.py              # Key-value store with TTL and named caches
 │   ├── event_handler.py               # Event system
 │   ├── logging_handler.py             # Logging
 │   ├── persistence_handler.py         # Data persistence
-│   └── stats_handler.py               # Statistics tracking
+│   ├── stats_handler.py               # Statistics tracking
+│   └── commands/                      # Organized command modules
+│       ├── __init__.py                # Package exports
+│       ├── base.py                    # Command decorator and mixins
+│       ├── string_commands.py         # String operations (SET, GET, DEL, EXPIRE, LPOP)
+│       ├── list_commands.py           # List operations (LPUSH, RPUSH)
+│       ├── cache_commands.py          # Cache management (CREATECACHE, CACHESET, etc.)
+│       ├── store_commands.py          # Store management (CREATESTORE, DELETESTORE, LISTSTORES)
+│       └── utility_commands.py        # Utilities (PING, ECHO, INSPECT, HISTORY, REPLAY)
 ├── tests/
 │   ├── unit/
 │   │   ├── test_cache_handler.py      # Cache handler tests
@@ -187,6 +229,8 @@ radish/
 │   ├── NAMED_CACHE_GUIDE.md           # Named cache system guide
 │   ├── PERSISTENCE_GUIDE.md           # Backup and restore guide
 │   ├── HTTP_SERVER_GUIDE.md           # HTTP API documentation
+│   ├── ARCHITECTURE.md                # Detailed architecture documentation
+│   ├── EXTENDING.md                   # Guide to extending Radish with custom commands
 │   └── TODO.md                        # Project roadmap and tasks
 ├── README.md                          # Project documentation
 └── MITLicense.txt                     # License file
