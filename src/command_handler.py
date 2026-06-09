@@ -5,6 +5,7 @@ This module implements a Redis-like command handler using the command pattern.
 It processes incoming commands and manages interactions with the data store.
 """
 import inspect
+import shlex
 from typing import List, Callable, Dict
 from .expiring_store import ExpiringStore
 from .validation_handler import ValidationHandler
@@ -513,19 +514,26 @@ class CommandHandler:
             result.append(f'- {store_name} ({num_items} items, {ttl} TTL)')
         return '\n'.join(result)
     
+    def _get_history(self) -> List[str]:
+        """
+        Get the command history, respecting max_history_size.
+         
+        Returns:
+            List[str]: List of commands in history
+        """
+        if self.max_history_size == 0:
+            return list(self.command_history)
+        return self.command_history[-self.max_history_size:]
+
     @command('HISTORY')
     def _handle_history(self, args: List[str]) -> str:
         """
         Handle HISTORY command.
-        
+         
         Returns:
             str: Formatted string of the last 20 commands executed
         """
-        if self.max_history_size == 0:
-            history = list(self.command_history)
-        else:
-            history = self.command_history[-self.max_history_size:]
-
+        history = self._get_history()
         if not history:
             return 'No commands in history'
 
@@ -537,18 +545,15 @@ class CommandHandler:
     @command('REPLAY')
     def _handle_replay(self, args: List[str]) -> str:
         """
-        Handle REPLAY command.
-        
+        Handle REPLAY command by index from history.
+         
+        Args:
+            args: [index] - 1-based index into command history
+             
         Returns:
-            str: 'OK' if replayed successfully, error message otherwise
+            str: Result of replayed command or error message
         """
-        import shlex
-
-        if self.max_history_size == 0:
-            history = list(self.command_history)
-        else:
-            history = self.command_history[-self.max_history_size:]
-
+        history = self._get_history()
         if not history:
             return 'No commands in history'
 
