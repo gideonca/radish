@@ -63,7 +63,7 @@ class CommandHandler(
 
     def _preprocess_set_command(self, command_parts: List[str]) -> List[str]:
         """
-        Preprocess SET command to handle JSON values with spaces.
+        Preprocess SET and CACHESET commands to handle JSON values with spaces.
         
         Args:
             command_parts: Original command parts
@@ -73,15 +73,28 @@ class CommandHandler(
         """
         if len(command_parts) < 3:
             return command_parts
-            
-        # If this is a SET command with more parts than expected,
-        # combine all parts after the key into a single value
-        if command_parts[0].upper() == 'SET' and len(command_parts) > 3:
+        
+        command = command_parts[0].upper()
+        
+        # Handle SET command: SET key value...
+        # If more than 3 parts, join everything after the key as the value
+        if command == 'SET' and len(command_parts) > 3:
             return [
                 command_parts[0],
                 command_parts[1],
                 ' '.join(command_parts[2:])
             ]
+        
+        # Handle CACHESET command: CACHESET cache_name key value...
+        # If more than 4 parts, join everything after the key as the value
+        if command == 'CACHESET' and len(command_parts) > 4:
+            return [
+                command_parts[0],
+                command_parts[1],
+                command_parts[2],
+                ' '.join(command_parts[3:])
+            ]
+        
         return command_parts
 
     def handle_command(self, command_parts: List[str], send_response: Callable) -> bool:

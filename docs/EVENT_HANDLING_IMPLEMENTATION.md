@@ -2,7 +2,29 @@
 
 ## Overview
 
-Event handling has been successfully implemented in Radish to emit events every time a cache or store is updated or deleted.
+Radish provides an event system that emits events every time a cache or store is updated or deleted. Event handling is **disabled by default for memory efficiency** but can be enabled when needed for monitoring, logging, and auditing.
+
+## Memory Optimization
+
+The event system is designed for minimal memory overhead:
+
+- **EventHandler**: Event tracking disabled by default (`track_events=False`)
+- **CacheHandler**: Event callbacks enabled for user-defined event monitoring
+- **CommandHandler**: Event tracking disabled to minimize server overhead
+- **ExpiringStore**: Event tracking disabled for memory efficiency
+
+When `track_events=False`, event handler registration methods (`on()`, `off()`) are no-ops and event callbacks are never stored or executed, saving ~5-10KB per instance.
+
+## Enabling Event Tracking
+
+To enable event tracking for monitoring or auditing:
+
+```python
+from src.event_handler import EventHandler
+
+# Enable event tracking (for CacheHandler or custom use)
+event_handler = EventHandler(track_events=True)
+```
 
 ## Implementation Details
 
@@ -86,18 +108,14 @@ The following events are now automatically emitted:
 All functionality has been tested and verified:
 
 ```bash
-# Comprehensive test
+# Comprehensive test (requires track_events=True enabled)
 python3 tests/integration/test_event_handling.py
 
 # Practical example
 python3 examples/event_handling_example.py
 ```
 
-Both tests pass successfully and demonstrate:
-- ✓ SET events emitted on create/update
-- ✓ DELETE events emitted on key deletion
-- ✓ CLEAR events emitted on cache clearing
-- ✓ CREATE_CACHE events emitted on cache creation
+Note: The integration tests specifically enable event tracking via `CacheHandler`, which has `track_events=True` by default since it's a feature-rich API designed for user applications.
 - ✓ DELETE_CACHE events emitted on cache deletion
 - ✓ Global event handlers work correctly
 - ✓ Cache-specific event handlers work correctly

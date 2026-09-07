@@ -6,7 +6,8 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 
 - **In-memory key-value store** - Fast data access with automatic expiration (TTL)
 - **Named caches** - Organize data into isolated namespaces
-- **Automatic backups** - Timestamped JSON backups every 5 minutes to `~/.radish/cache_backup`
+- **JSON support** - Store and retrieve JSON objects with spaces preserved
+- **Flexible backups** - Manual and automatic timestamped JSON backups to `~/.radish/cache_backup` (auto-backup disabled by default for memory efficiency)
 - **Thread-safe operations** - Concurrent client support with fine-grained locking
 - **Event system** - Monitor and react to cache operations (SET, DELETE, CREATE_CACHE, DELETE_CACHE, CLEAR)
 - **Comprehensive logging** - Commands, responses, expirations, and server output with daily rotation
@@ -15,6 +16,7 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 - **Redis-like commands** - Familiar interface for Redis users
 - **HTTP API** - REST access without external dependencies
 - **List operations** - LPUSH, RPUSH, LPOP support
+- **Memory efficient** - Disabled auto-backup and event tracking by default for minimal overhead
 - **No dependencies** - Pure Python using only the standard library
 
 ## Documentation
@@ -59,6 +61,21 @@ OK
 > GET mykey
 Hello World
 
+> SET user {\"name\": \"Alice\", \"age\": 30}
+OK
+
+> GET user
+{\"name\": \"Alice\", \"age\": 30}
+
+> CREATECACHE sessions
+OK
+
+> CACHESET sessions session:123 {\"user_id\": 1, \"login\": \"2025-01-15T10:00:00\"}
+OK
+
+> CACHEGET sessions session:123
+{\"user_id\": 1, \"login\": \"2025-01-15T10:00:00\"}
+
 > EXPIRE mykey 60
 OK
 
@@ -82,6 +99,7 @@ See the **[HTTP Server Guide](docs/HTTP_SERVER_GUIDE.md)** for complete API docu
 
 ### Basic Commands
 - `PING`, `SET`, `GET`, `DEL`, `EXPIRE`, `INSPECT`
+- JSON support with spaces preserved in all commands
 
 ### List Operations
 - `LPUSH`, `RPUSH`, `LPOP`
@@ -89,6 +107,7 @@ See the **[HTTP Server Guide](docs/HTTP_SERVER_GUIDE.md)** for complete API docu
 ### Named Caches
 - `CREATECACHE`, `DELETECACHE`, `LISTCACHES`
 - `CACHESET`, `CACHEGET`, `CACHEDEL`, `CACHEKEYS`, `CACHEGETALL`
+- JSON support with full value preservation
 
 ### Advanced Features
 - `CREATESTORE`, `DELETESTORE`, `LISTSTORES` (Expiring stores)

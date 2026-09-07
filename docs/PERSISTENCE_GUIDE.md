@@ -56,8 +56,10 @@ Example backup file (`cache_users_20251115_161118.json`):
 
 The server starts with these default persistence settings:
 - **Backup Directory**: `~/.radish/cache_backup`
-- **Auto-backup Interval**: 300 seconds (5 minutes)
-- **Backup on Shutdown**: Yes
+- **Auto-backup Interval**: 0 seconds (disabled by default for lower memory footprint)
+- **Backup on Shutdown**: Yes (final backup always performed)
+
+To enable automatic backups at regular intervals, use the `auto_backup_interval` parameter when initializing:
 
 ### Custom Configuration
 
@@ -66,18 +68,24 @@ You can customize persistence in `server.py`:
 ```python
 from src.persistence_handler import PersistenceHandler
 
-# Custom backup directory and interval
+# Enable automatic backups every 10 minutes
 persistence_handler = PersistenceHandler(
     backup_dir="/custom/path/to/backups",  # Custom backup location
-    auto_backup_interval=600,               # Backup every 10 minutes
+    auto_backup_interval=600,               # Backup every 10 minutes (600 seconds)
     store=store
 )
 
-# Disable auto-backup (manual only)
+# Keep auto-backup disabled (manual only) - memory efficient
 persistence_handler = PersistenceHandler(
-    auto_backup_interval=0,  # Set to 0 to disable
+    auto_backup_interval=0,  # Default: auto-backup disabled
     store=store
 )
+
+# Use manual backups instead
+persistence_handler.backup_now()  # Backup immediately when needed
+```
+
+**Memory Optimization Note:** The default `auto_backup_interval=0` disables automatic periodic backups to reduce memory overhead. Use `backup_now()` for manual backups when needed, or enable periodic backups by setting `auto_backup_interval` to a positive value.
 ```
 
 ## Using Persistence Programmatically

@@ -68,7 +68,6 @@ class CacheCommands:
             str: 'OK' if successful, error message otherwise
         """
         cache_name, key, value = args[0], args[1], args[2]
-
         # Auto-create cache if it doesn't exist
         if cache_name not in [c for c in self.store.list_caches()]:
             self.store.create_cache(cache_name)

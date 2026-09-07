@@ -53,13 +53,23 @@ Available caches:
 ### Cache Operations
 
 #### CACHESET
-Set a key-value pair in a specific cache.
+Set a key-value pair in a specific cache. Supports JSON and other values with spaces.
 ```
 CACHESET cache_name key value
 ```
-**Example:**
+**Simple Example:**
 ```
 CACHESET users user123 john@example.com
+Response: OK
+```
+
+**JSON Example:**
+CACHESET supports JSON objects and arrays with spaces:
+```
+CACHESET users john {"name": "John Doe", "age": 30}
+Response: OK
+
+CACHESET products laptop {"name": "Laptop", "price": 999.99, "stock": 50}
 Response: OK
 ```
 
@@ -123,31 +133,47 @@ CREATECACHE users
 CREATECACHE products
 CREATECACHE sessions
 
-# 2. Store data in the users cache
+# 2. Store simple data in the users cache
 CACHESET users user:1 john@example.com
 CACHESET users user:2 jane@example.com
 CACHESET users user:3 bob@example.com
 
-# 3. Store data in the products cache
-CACHESET products prod:100 Laptop
-CACHESET products prod:101 Mouse
+# 3. Store JSON objects in the products cache
+CACHESET products prod:100 {"name": "Laptop", "price": 999.99}
+CACHESET products prod:101 {"name": "Mouse", "price": 29.99}
 
-# 4. Retrieve data from a specific cache
+# 4. Store complex JSON with nested data
+CACHESET sessions session:abc {"user_id": 1, "login": "2025-01-15T10:30:00", "roles": ["admin", "user"]}
+
+# 5. Retrieve data from a specific cache
 CACHEGET users user:1
 # Response: john@example.com
 
-# 5. List all keys in the users cache
+CACHEGET products prod:100
+# Response: {"name": "Laptop", "price": 999.99}
+
+# 6. List all keys in the users cache
 CACHEKEYS users
 # Response:
 # user:1
 # user:2
 # user:3
 
-# 6. Check all caches and their sizes
+# 7. Get all data in a cache as JSON
+CACHEGETALL products
+# Response:
+# {
+#   "prod:100": "{\"name\": \"Laptop\", \"price\": 999.99}",
+#   "prod:101": "{\"name\": \"Mouse\", \"price\": 29.99}"
+# }
+
+# 8. Check all caches and their sizes
 LISTCACHES
 # Response:
 # Available caches:
 # - users (3 items)
+# - products (2 items)
+# - sessions (1 items)
 # - products (2 items)
 # - sessions (0 items)
 

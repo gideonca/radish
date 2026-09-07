@@ -24,12 +24,6 @@ git clone https://github.com/gideonca/radish.git
 cd radish
 ```
 
-2. (Optional) Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-```
-
 Note: Radish has no external dependencies - it uses only Python's standard library.
 
 ### Starting the Server
@@ -44,7 +38,12 @@ The server will start, display a banner, and listen for connections:
 ```
 Server listening on 127.0.0.1:6379
 Backups are being written to: ~/.radish/cache_backup
-Auto-backup interval: 5 minutes
+Auto-backup: disabled (use backup_now() for manual backups)
+```
+
+To enable automatic backups, modify `server.py`:
+```python
+ServiceFactory.initialize(auto_backup_interval=300)  # 5 minutes
 ```
 
 ### Connecting to the Server
@@ -218,7 +217,9 @@ start
 
 ## Working with JSON Data
 
-Radish handles JSON data seamlessly. You can include spaces in your JSON strings:
+Radish handles JSON data seamlessly in both the default store and named caches. You can include spaces and complex structures in JSON:
+
+### In the Default Store (SET/GET)
 
 ```
 > SET user:1 {"name":"John"}
@@ -227,16 +228,33 @@ OK
 > SET user:2 {"name": "Jane", "age": 25}
 OK
 
-> SET user:3 {
-    "name": "Bob",
-    "age": 30,
-    "roles": ["admin", "user"]
-}
-OK
-
 > GET user:2
 {"name": "Jane", "age": 25}
 ```
+
+### In Named Caches (CACHESET/CACHEGET)
+
+```
+> CREATECACHE users
+OK
+
+> CACHESET users john {"name": "John Doe", "email": "john@example.com", "age": 30}
+OK
+
+> CACHESET users alice {"name": "Alice Smith", "roles": ["admin", "user"], "active": true}
+OK
+
+> CACHEGET users john
+{"name": "John Doe", "email": "john@example.com", "age": 30}
+
+> CACHEGETALL users
+{
+  "john": "{\"name\": \"John Doe\", \"email\": \"john@example.com\", \"age\": 30}",
+  "alice": "{\"name\": \"Alice Smith\", \"roles\": [\"admin\", \"user\"], \"active\": true}"
+}
+```
+
+**Note:** Spaces in JSON are automatically preserved when using CACHESET and CACHEGET.
 
 ## Named Caches
 

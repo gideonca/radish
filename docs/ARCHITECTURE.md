@@ -19,6 +19,16 @@ The `ServiceFactory` class (`src/factory.py`) manages all application services a
 - **Easy testing** - Call `ServiceFactory.reset()` to clean up between tests
 - **Explicit dependency order** - Clear initialization sequence with no implicit dependencies
 - **Configuration flexibility** - Pass settings to `initialize()`
+- **Memory efficiency** - Services are initialized with memory-optimized defaults
+
+### Memory Optimizations
+
+Radish uses several optimizations to minimize memory footprint:
+
+- **EventHandler**: Event tracking is disabled by default for low-overhead command processing
+- **PersistenceHandler**: Auto-backup is disabled by default (`auto_backup_interval=0`)
+- **Dataclass slots**: Uses `@dataclass(slots=True)` for CacheStats and CacheEventContext to reduce per-instance overhead
+- **Lazy thread creation**: Background threads only created when needed (e.g., when persistence is enabled)
 
 ### Usage
 
@@ -27,7 +37,10 @@ The `ServiceFactory` class (`src/factory.py`) manages all application services a
 ```python
 from src.factory import ServiceFactory
 
-# Initialize all services at startup
+# Initialize all services at startup (auto-backup disabled by default)
+ServiceFactory.initialize()
+
+# Enable automatic backups every 5 minutes
 ServiceFactory.initialize(auto_backup_interval=300)
 ```
 
