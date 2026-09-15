@@ -31,14 +31,14 @@ class ServiceFactory:
     @classmethod
     def initialize(
         cls,
-        auto_backup_interval: int = 300,
+        auto_backup_interval: int = 0,
     ) -> None:
         """
         Initialize all services.
 
         Args:
             auto_backup_interval (int): Interval in seconds for auto-backup.
-                Defaults to 300 (5 minutes).
+                Defaults to 300 (5 minutes). Set to 0 to disable auto-backup.
         """
         # Create store first (no dependencies)
         cls._store = ExpiringStore()
