@@ -53,11 +53,12 @@ You should see:
 curl http://localhost:8000/ping
 ```
 
-You should get:
+You should get a JSON response whose `response` field contains the Radish heartbeat banner string, for example a multiline message ending with `I LIVE`.
+
 ```json
 {
   "status": "ok",
-  "response": "PONG"
+  "response": "\n                     .-.\n                    (o o)\n...\n                    I LIVE\n"
 }
 ```
 
@@ -99,7 +100,7 @@ curl http://localhost:8000/ping
 ```json
 {
   "status": "ok",
-  "response": "PONG"
+  "response": "\n                     .-.\n                    (o o)\n...\n                    I LIVE\n"
 }
 ```
 
