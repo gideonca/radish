@@ -1,9 +1,8 @@
 """
 Service factory for initializing and managing Radish services.
 
-This module provides a centralized factory pattern to create and manage
-singletons for the store, persistence handler, command handler, and logging
-handler. It eliminates import-time side effects and makes testing easier.
+This module centralizes creation of the server's long-lived singletons so that
+startup, dependency wiring, and teardown are all defined in one place.
 
 Usage:
     ServiceFactory.initialize()
@@ -11,150 +10,96 @@ Usage:
     command_handler = ServiceFactory.get_command_handler()
 """
 
-from typing import Optional
-from .expiring_store import ExpiringStore
+from typing import Any, Dict, Optional, Type
+
 from .command_handler import CommandHandler
-from .persistence_handler import PersistenceHandler
 from .event_handler import EventHandler
+from .expiring_store import ExpiringStore
 from .logging_handler import LoggingHandler
+from .persistence_handler import PersistenceHandler
 
 
 class ServiceFactory:
     """Factory for creating and managing service singletons."""
 
-    _store: Optional[ExpiringStore] = None
-    _persistence: Optional[PersistenceHandler] = None
-    _command_handler: Optional[CommandHandler] = None
-    _event_handler: Optional[EventHandler] = None
-    _logging_handler: Optional[LoggingHandler] = None
+    _services: Dict[str, Any] = {}
 
     @classmethod
     def initialize(
         cls,
         auto_backup_interval: int = 0,
-    ) -> None:
+    ) -> "ServiceFactory":
         """
-        Initialize all services.
+        Initialize all services and return the factory class for chaining.
 
         Args:
             auto_backup_interval (int): Interval in seconds for auto-backup.
-                Defaults to 300 (5 minutes). Set to 0 to disable auto-backup.
+                Defaults to 0 (disabled). Set to a positive value to enable.
         """
-        # Create store first (no dependencies)
-        cls._store = ExpiringStore()
-
-        # Create persistence handler (depends on store)
-        cls._persistence = PersistenceHandler(
+        store = ExpiringStore()
+        persistence = PersistenceHandler(
             auto_backup_interval=auto_backup_interval,
-            store=cls._store,
+            store=store,
         )
+        command_handler = CommandHandler(store)
+        event_handler = EventHandler()
+        logging_handler = LoggingHandler()
 
-        # Create command handler (depends on store)
-        cls._command_handler = CommandHandler(cls._store)
+        cls._services = {
+            "store": store,
+            "persistence": persistence,
+            "command_handler": command_handler,
+            "event_handler": event_handler,
+            "logging_handler": logging_handler,
+        }
+        return cls
 
-        # Create handlers
-        cls._event_handler = EventHandler()
-        cls._logging_handler = LoggingHandler()
+    @classmethod
+    def _get_service(cls, name: str, expected_type: Optional[Type] = None) -> Any:
+        """Fetch a service from the registry or raise a clear runtime error."""
+        service = cls._services.get(name)
+        if service is None:
+            raise RuntimeError(
+                "ServiceFactory not initialized. Call ServiceFactory.initialize() first."
+            )
+        if expected_type is not None and not isinstance(service, expected_type):
+            raise TypeError(f"Service '{name}' is not of type {expected_type.__name__}")
+        return service
 
     @classmethod
     def get_store(cls) -> ExpiringStore:
-        """
-        Get the ExpiringStore singleton.
-
-        Returns:
-            ExpiringStore: The backing data store
-
-        Raises:
-            RuntimeError: If factory has not been initialized
-        """
-        if cls._store is None:
-            raise RuntimeError(
-                "ServiceFactory not initialized. Call ServiceFactory.initialize() first."
-            )
-        return cls._store
+        """Get the ExpiringStore singleton."""
+        return cls._get_service("store", ExpiringStore)
 
     @classmethod
     def get_persistence(cls) -> PersistenceHandler:
-        """
-        Get the PersistenceHandler singleton.
-
-        Returns:
-            PersistenceHandler: The persistence handler
-
-        Raises:
-            RuntimeError: If factory has not been initialized
-        """
-        if cls._persistence is None:
-            raise RuntimeError(
-                "ServiceFactory not initialized. Call ServiceFactory.initialize() first."
-            )
-        return cls._persistence
+        """Get the PersistenceHandler singleton."""
+        return cls._get_service("persistence", PersistenceHandler)
 
     @classmethod
     def get_command_handler(cls) -> CommandHandler:
-        """
-        Get the CommandHandler singleton.
-
-        Returns:
-            CommandHandler: The command handler
-
-        Raises:
-            RuntimeError: If factory has not been initialized
-        """
-        if cls._command_handler is None:
-            raise RuntimeError(
-                "ServiceFactory not initialized. Call ServiceFactory.initialize() first."
-            )
-        return cls._command_handler
+        """Get the CommandHandler singleton."""
+        return cls._get_service("command_handler", CommandHandler)
 
     @classmethod
     def get_event_handler(cls) -> EventHandler:
-        """
-        Get the EventHandler singleton.
-
-        Returns:
-            EventHandler: The event handler
-
-        Raises:
-            RuntimeError: If factory has not been initialized
-        """
-        if cls._event_handler is None:
-            raise RuntimeError(
-                "ServiceFactory not initialized. Call ServiceFactory.initialize() first."
-            )
-        return cls._event_handler
+        """Get the EventHandler singleton."""
+        return cls._get_service("event_handler", EventHandler)
 
     @classmethod
     def get_logging_handler(cls) -> LoggingHandler:
-        """
-        Get the LoggingHandler singleton.
-
-        Returns:
-            LoggingHandler: The logging handler
-
-        Raises:
-            RuntimeError: If factory has not been initialized
-        """
-        if cls._logging_handler is None:
-            raise RuntimeError(
-                "ServiceFactory not initialized. Call ServiceFactory.initialize() first."
-            )
-        return cls._logging_handler
+        """Get the LoggingHandler singleton."""
+        return cls._get_service("logging_handler", LoggingHandler)
 
     @classmethod
     def reset(cls) -> None:
-        """
-        Reset all singletons. Useful for testing.
+        """Reset all singletons and stop background threads."""
+        store = cls._services.get("store")
+        persistence = cls._services.get("persistence")
 
-        Stops all background threads before resetting.
-        """
-        if cls._store is not None:
-            cls._store.stop()
-        if cls._persistence is not None:
-            cls._persistence.stop()
+        if store is not None:
+            store.stop()
+        if persistence is not None:
+            persistence.stop()
 
-        cls._store = None
-        cls._persistence = None
-        cls._command_handler = None
-        cls._event_handler = None
-        cls._logging_handler = None
+        cls._services = {}
