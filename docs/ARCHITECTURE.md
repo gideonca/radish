@@ -21,14 +21,14 @@ The `ServiceFactory` class (`src/factory.py`) manages all application services a
 - **Configuration flexibility** - Pass settings to `initialize()`
 - **Memory efficiency** - Services are initialized with memory-optimized defaults
 
-### Memory Optimizations
+### Memory and Startup Behavior
 
-Radish uses several optimizations to minimize memory footprint:
+Radish uses several runtime and startup patterns to balance features and overhead:
 
-- **EventHandler**: Event tracking is disabled by default for low-overhead command processing
-- **PersistenceHandler**: Auto-backup is disabled by default (`auto_backup_interval=0`)
-- **Dataclass slots**: Uses `@dataclass(slots=True)` for CacheStats and CacheEventContext to reduce per-instance overhead
-- **Lazy thread creation**: Background threads only created when needed (e.g., when persistence is enabled)
+- **EventHandler**: Event tracking is enabled in the runtime command path and is used for cache lifecycle notifications
+- **PersistenceHandler**: The TCP server starts with a 5-minute auto-backup interval (`auto_backup_interval=300`), but the factory default remains `0` when used directly
+- **Thread creation**: Background cleanup and persistence threads are created when their services are initialized
+- **Dependency wiring**: Services are constructed in a fixed order so that the store exists before command and persistence handlers depend on it
 
 ### Usage
 
@@ -37,11 +37,14 @@ Radish uses several optimizations to minimize memory footprint:
 ```python
 from src.factory import ServiceFactory
 
-# Initialize all services at startup (auto-backup disabled by default)
+# Initialize all services at startup with the factory default
 ServiceFactory.initialize()
 
-# Enable automatic backups every 5 minutes
+# Explicitly enable automatic backups every 5 minutes
 ServiceFactory.initialize(auto_backup_interval=300)
+
+# Or disable them explicitly when using the factory directly
+ServiceFactory.initialize(auto_backup_interval=0)
 ```
 
 #### Accessing Services

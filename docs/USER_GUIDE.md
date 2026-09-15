@@ -38,12 +38,12 @@ The server will start, display a banner, and listen for connections:
 ```
 Server listening on 127.0.0.1:6379
 Backups are being written to: ~/.radish/cache_backup
-Auto-backup: disabled (use backup_now() for manual backups)
+Auto-backup interval: 5 minutes
 ```
 
-To enable automatic backups, modify `server.py`:
+To disable automatic backups when using the factory directly, call:
 ```python
-ServiceFactory.initialize(auto_backup_interval=300)  # 5 minutes
+ServiceFactory.initialize(auto_backup_interval=0)
 ```
 
 ### Connecting to the Server
@@ -68,11 +68,23 @@ See the [HTTP Server Guide](HTTP_SERVER_GUIDE.md) for HTTP API access, or use a 
 
 ### PING - Test Connection
 
-Verify the server is responding:
+Verify the server is responding. The current implementation returns a small heartbeat banner instead of a bare `PONG` string:
 
 ```text
 > PING
-PONG
+                     .-.
+                    (o o)
+                    | O \
+                    \   \
+                    `~~~'
+                    /     \
+                   /       \
+                  /         \
+                 /           \
+                /             \
+               /               \
+               -----------------
+                    I LIVE
 ```
 
 ### ECHO - Echo Text
